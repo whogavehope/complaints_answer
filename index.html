@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прием претензий от заказчиков</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        select {
+            padding: 5px;
+            font-size: 16px;
+        }
+        div {
+            margin-bottom: 15px; /* Отступ между блоками */
+        }
+    </style>
+</head>
+<body>
+    <h1>Прием претензий от заказчиков</h1>
+
+    <!-- Первый блок: Выбор коллекции -->
+    <div>
+        <label for="collection">Выберите коллекцию:</label>
+        <select id="collection">
+            <option value="Original">Original</option>
+            <option value="Select">Select</option>
+            <option value="Color">Color</option>
+            <option value="Contour">Contour</option>
+            <option value="Кухни_Sidak">Кухни_Sidak</option>
+        </select>
+    </div>
+
+    <!-- Второй блок: Выбор типа претензии -->
+    <div>
+        <label for="claimType">Выберите тип претензии:</label>
+        <select id="claimType">
+            <!-- Значения будут заполняться динамически -->
+        </select>
+    </div>
+
+    <script>
+        // Объект с данными для второго выпадающего списка
+        const claimOptions = {
+            Original: ["Включение","Мех.повреждение ТК","Механическое повреждение фабрика","Дефект материала","Неверная присадка фабрика","Неверная присадка клиентом"],
+            Select: ["Белесость кромки", "Включение","Допуск по габаритам","Клеевой шов","Мех.повреждение клиентом","Мех.повреждение ТК","Механическое повреждение фабрика","Дефект материала","Нарушение геометрии","Неверная присадка фабрика","Неверная присадка клиентом"],
+            Color: ["Неверная присадка фабрика","Неверная присадка клиентом", "Сборка", "Другое"],
+            Contour: ["Неверная присадка фабрика","Неверная присадка клиентом","Зазор в соединениях", "Доставка"],
+            Кухни_Sidak: ["Брак", "Сборка", "Другое","Неверная присадка фабрика","Неверная присадка клиентом"]
+        };
+
+        // Получаем элементы из DOM
+        const collectionSelect = document.getElementById("collection");
+        const claimTypeSelect = document.getElementById("claimType");
+
+        // Функция для обновления второго выпадающего списка
+        function updateClaimType() {
+            const selectedCollection = collectionSelect.value;
+
+            // Очищаем текущие значения второго списка
+            claimTypeSelect.innerHTML = "";
+
+            // Добавляем новые значения в зависимости от выбранной коллекции
+            if (claimOptions[selectedCollection]) {
+                claimOptions[selectedCollection].forEach(option => {
+                    const optionElement = document.createElement("option");
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    claimTypeSelect.appendChild(optionElement);
+                });
+            }
+        }
+
+        // Слушаем изменения в первом выпадающем списке
+        collectionSelect.addEventListener("change", updateClaimType);
+
+        // Инициализация второго списка при загрузке страницы
+        updateClaimType();
+    </script>
+</body>
+</html>
