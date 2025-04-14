@@ -20,68 +20,369 @@
         div {
             margin-bottom: 15px; /* Отступ между блоками */
         }
+        .material-list {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .material-item {
+            margin-bottom: 10px;
+        }
+        .upload-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .upload-label {
+            font-weight: normal;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 5px;
+            background-color: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: green;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .checkmark {
+            color: green;
+            font-size: 18px;
+            margin-left: 10px;
+            display: none;
+        }
+        .status-message {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
     </style>
 </head>
 <body>
     <h1>Прием претензий от заказчиков</h1>
 
-    <!-- Первый блок: Выбор коллекции -->
+    <!-- Первый блок: Выбор категории дефекта -->
     <div>
-        <label for="collection">Выберите коллекцию:</label>
-        <select id="collection">
-            <option value="Original">Original</option>
-            <option value="Select">Select</option>
-            <option value="Color">Color</option>
-            <option value="Contour">Contour</option>
-            <option value="Кухни_Sidak">Кухни_Sidak</option>
+        <label for="defectCategory">Выберите категорию дефекта:</label>
+        <select id="defectCategory">
+            <!-- Категории будут заполняться динамически -->
         </select>
     </div>
 
-    <!-- Второй блок: Выбор типа претензии -->
+    <!-- Второй блок: Выбор типа дефекта -->
     <div>
-        <label for="claimType">Выберите тип претензии:</label>
-        <select id="claimType">
-            <!-- Значения будут заполняться динамически -->
+        <label for="defectType">Выберите тип дефекта:</label>
+        <select id="defectType">
+            <!-- Типы дефектов будут заполняться динамически -->
         </select>
     </div>
+
+    <!-- Блок для отображения требуемых материалов -->
+    <div id="materialListContainer" class="material-list">
+        <!-- Здесь будет отображаться список материалов -->
+    </div>
+
+    <!-- Кнопка для отправки данных -->
+    <button id="sendDataButton" style="padding: 10px 20px; font-size: 16px;">Отправить данные</button>
+
+    <!-- Блок для отображения статуса отправки -->
+    <div id="statusMessage" class="status-message"></div>
 
     <script>
-        // Объект с данными для второго выпадающего списка
-        const claimOptions = {
-            Original: ["Включение","Мех.повреждение ТК","Механическое повреждение фабрика","Дефект материала","Неверная присадка фабрика","Неверная присадка клиентом"],
-            Select: ["Белесость кромки", "Включение","Допуск по габаритам","Клеевой шов","Мех.повреждение клиентом","Мех.повреждение ТК","Механическое повреждение фабрика","Дефект материала","Нарушение геометрии","Неверная присадка фабрика","Неверная присадка клиентом"],
-            Color: ["Неверная присадка фабрика","Неверная присадка клиентом", "Сборка", "Другое"],
-            Contour: ["Неверная присадка фабрика","Неверная присадка клиентом","Зазор в соединениях", "Доставка"],
-            Кухни_Sidak: ["Брак", "Сборка", "Другое","Неверная присадка фабрика","Неверная присадка клиентом"]
+        // Объект с данными для выпадающих списков
+        const defectOptions = {
+            "Дефекты покрытия/облицовки": [
+                "Белесость кромки",
+                "Вздутие (покрытия)",
+                "Включение",
+                "Некачественное нанесение клея",
+                "Непрокат",
+                "Несоответствие облицовки",
+                "Несоответствие текстуры",
+                "Отслоение (покрытия, кромки)",
+                "Пятна",
+                "Разнотон",
+                "Складки",
+                "Трещины (в ЛКМ, пленке)",
+                "Шагрень",
+                "Некачественное нанесение ЛКМ",
+                "Дефект патины"
+            ],
+            "Дефекты обработки/производства": [
+                "Клеевой шов (видимый, некачественный)",
+                "Расклеивание уголка"
+            ],
+            "Геометрические несоответствия": [
+                "Допуск по габаритам / Несоответствие габаритов",
+                "Зазор в соединениях (Contour/Уголки)",
+                "Нарушение геометрии",
+                "Покоробленность",
+                "Несоответствие сечения/фрезеровки",
+                "Неверная присадка"
+            ],
+            "Механические повреждения": [
+                "Мех.повреждение клиентом",
+                "Мех.повреждение ТК",
+                "Механическое повреждение фабрика",
+                "Оплавление",
+                "Трещины (от удара)",
+                "Зарезы на кромке",
+                "Царапины на поверхности"
+            ],
+            "Ошибки комплектации, логистики, заказа": [
+                "Недостача",
+                "Несоответствие маркировки",
+                "Ошибка клиента при оформлении",
+                "Ошибка менеджера фабрики/представительства",
+                "Пересорт",
+                "Потеря фасадов"
+            ],
         };
 
+        // Объект с материалами для каждого типа дефекта
+        const materialRequirements = {
+            "Белесость кромки": [
+                "Фото лицевой стороны фасада на расстоянии 50-70 см перпендикулярно к объективу камеры.",
+                "Фото белесости крупным планом."
+            ],
+            "Вздутие (покрытия)": [
+                "Фото общего вида фасада.",
+                "Фото вздутия крупным планом с разных углов."
+            ],
+            "Включение": [
+                "Фото включения крупным планом.",
+                "Фото общего вида фасада с указанием места дефекта."
+            ],
+            "Некачественное нанесение клея": [
+                "Фото проблемного участка с близкого расстояния.",
+                "Фото общего вида фасада."
+            ]
+            // Добавьте материалы для других типов дефектов аналогично
+        };
+
+        // Сортируем категории и подкатегории по алфавиту
+        const sortedDefectOptions = {};
+        Object.keys(defectOptions)
+            .sort() // Сортировка категорий по алфавиту
+            .forEach(category => {
+                sortedDefectOptions[category] = defectOptions[category].sort(); // Сортировка подкатегорий
+            });
+
         // Получаем элементы из DOM
-        const collectionSelect = document.getElementById("collection");
-        const claimTypeSelect = document.getElementById("claimType");
+        const defectCategorySelect = document.getElementById("defectCategory");
+        const defectTypeSelect = document.getElementById("defectType");
+        const materialListContainer = document.getElementById("materialListContainer");
+        const sendDataButton = document.getElementById("sendDataButton");
+        const statusMessage = document.getElementById("statusMessage");
+
+        // Функция для заполнения первого выпадающего списка
+        function populateCategories() {
+            defectCategorySelect.innerHTML = ""; // Очищаем список
+            Object.keys(sortedDefectOptions).forEach(category => {
+                const optionElement = document.createElement("option");
+                optionElement.value = category;
+                optionElement.textContent = category;
+                defectCategorySelect.appendChild(optionElement);
+            });
+        }
 
         // Функция для обновления второго выпадающего списка
-        function updateClaimType() {
-            const selectedCollection = collectionSelect.value;
+        function updateDefectType() {
+            const selectedCategory = defectCategorySelect.value;
 
-            // Очищаем текущие значения второго списка
-            claimTypeSelect.innerHTML = "";
+            // Очищаем текущие значения второго списка и блока материалов
+            defectTypeSelect.innerHTML = "";
+            materialListContainer.innerHTML = "";
 
-            // Добавляем новые значения в зависимости от выбранной коллекции
-            if (claimOptions[selectedCollection]) {
-                claimOptions[selectedCollection].forEach(option => {
+            // Добавляем новые значения в зависимости от выбранной категории
+            if (sortedDefectOptions[selectedCategory]) {
+                sortedDefectOptions[selectedCategory].forEach(option => {
                     const optionElement = document.createElement("option");
                     optionElement.value = option;
                     optionElement.textContent = option;
-                    claimTypeSelect.appendChild(optionElement);
+                    defectTypeSelect.appendChild(optionElement);
                 });
             }
         }
 
-        // Слушаем изменения в первом выпадающем списке
-        collectionSelect.addEventListener("change", updateClaimType);
+        // Функция для обновления списка материалов
+        function updateMaterialList() {
+            const selectedType = defectTypeSelect.value;
+            materialListContainer.innerHTML = ""; // Очищаем блок материалов
 
-        // Инициализация второго списка при загрузке страницы
-        updateClaimType();
+            // Если есть материалы для выбранного типа дефекта
+            if (materialRequirements[selectedType]) {
+                materialRequirements[selectedType].forEach((material, index) => {
+                    // Создаем контейнер для пункта списка
+                    const materialItem = document.createElement("div");
+                    materialItem.classList.add("material-item");
+
+                    // Добавляем текстовое описание
+                    const materialText = document.createElement("span");
+                    materialText.textContent = material;
+                    materialItem.appendChild(materialText);
+
+                    // Добавляем поле для загрузки файла
+                    const uploadContainer = document.createElement("div");
+                    uploadContainer.classList.add("upload-container");
+
+                    const uploadLabel = document.createElement("label");
+                    uploadLabel.classList.add("upload-label");
+                    uploadLabel.textContent = "Прикрепить фото:";
+
+                    const uploadInput = document.createElement("input");
+                    uploadInput.type = "file";
+                    uploadInput.accept = "image/*";
+
+                    // Прогресс-бар
+                    const progressBar = document.createElement("div");
+                    progressBar.classList.add("progress-bar");
+
+                    const progressFill = document.createElement("div");
+                    progressFill.classList.add("progress-fill");
+
+                    progressBar.appendChild(progressFill);
+
+                    // Галочка
+                    const checkmark = document.createElement("span");
+                    checkmark.classList.add("checkmark");
+                    checkmark.textContent = "✓";
+
+                    uploadContainer.appendChild(uploadLabel);
+                    uploadContainer.appendChild(uploadInput);
+
+                    materialItem.appendChild(uploadContainer);
+                    materialItem.appendChild(progressBar);
+                    materialItem.appendChild(checkmark);
+
+                    // Добавляем пункт в контейнер материалов
+                    materialListContainer.appendChild(materialItem);
+
+                    // Отслеживаем загрузку файла
+                    uploadInput.addEventListener("change", (event) => {
+                        const file = event.target.files[0];
+                        if (file) {
+                            simulateUpload(file, progressFill, checkmark);
+                        }
+                    });
+                });
+            }
+        }
+
+        // Имитация загрузки файла
+        function simulateUpload(file, progressFill, checkmark) {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                progressFill.style.width = `${progress}%`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    checkmark.style.display = "inline"; // Показываем галочку
+                }
+            }, 200);
+        }
+
+        // Функция для отправки данных на почту
+        async function sendEmail(data) {
+            const nodemailer = require("nodemailer");
+
+            // Настройки SMTP
+            const transporter = nodemailer.createTransport({
+                host: "smtp.sidak.ru",
+                port: 25,
+                secure: false, // Без SSL/TLS
+                auth: {
+                    user: "Idea",
+                    pass: "b72045Bq2"
+                }
+            });
+
+            // Настройки письма
+            const mailOptions = {
+                from: "Idea@sidak.ru",
+                to: "kamynin@sidak.ru",
+                subject: "Данные о дефекте",
+                text: `Категория дефекта: ${data.category}\nТип дефекта: ${data.type}`,
+                attachments: data.attachments
+            };
+
+            try {
+                await transporter.sendMail(mailOptions);
+                return true; // Успешная отправка
+            } catch (error) {
+                console.error("Ошибка при отправке письма:", error);
+                return false; // Ошибка отправки
+            }
+        }
+
+        // Обработка нажатия кнопки "Отправить данные"
+        sendDataButton.addEventListener("click", async () => {
+            const selectedCategory = defectCategorySelect.value;
+            const selectedType = defectTypeSelect.value;
+
+            // Собираем прикрепленные файлы
+            const attachments = [];
+            const materialItems = materialListContainer.querySelectorAll(".material-item");
+            materialItems.forEach(item => {
+                const input = item.querySelector("input[type='file']");
+                if (input.files && input.files[0]) {
+                    attachments.push({
+                        filename: input.files[0].name,
+                        content: input.files[0]
+                    });
+                }
+            });
+
+            // Проверяем, что выбраны категория и тип дефекта
+            if (!selectedCategory || !selectedType) {
+                alert("Выберите категорию и тип дефекта!");
+                return;
+            }
+
+            // Очищаем статус отправки
+            statusMessage.textContent = "";
+            statusMessage.className = "status-message";
+
+            // Отправляем данные
+            const isSent = await sendEmail({
+                category: selectedCategory,
+                type: selectedType,
+                attachments: attachments
+            });
+
+            // Обновляем статус отправки
+            if (isSent) {
+                statusMessage.textContent = "Данные успешно отправлены!";
+                statusMessage.className = "status-message success";
+            } else {
+                statusMessage.textContent = "Ошибка при отправке данных. Проверьте консоль.";
+                statusMessage.className = "status-message error";
+            }
+        });
+
+        // Инициализация первого списка при загрузке страницы
+        populateCategories();
+
+        // Слушаем изменения в первом выпадающем списке
+        defectCategorySelect.addEventListener("change", updateDefectType);
+
+        // Слушаем изменения во втором выпадающем списке
+        defectTypeSelect.addEventListener("change", updateMaterialList);
+
+        // Инициализация второго списка и блока материалов при загрузке страницы
+        updateDefectType();
+        updateMaterialList();
     </script>
 </body>
 </html>
